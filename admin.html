@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#090b17" />
+  <title>Bank Soal AI — Adu IQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="ai.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./"><span class="brand-mark">IQ</span><span>adu<span class="brand-accent">.</span>iq</span></a>
+      <div class="topbar-right"><span class="online"><i></i> BANK SOAL AI</span><a class="back-link" href="./">← Kembali ke game</a></div>
+    </header>
+    <main class="main-content admin-main">
+      <div class="admin-intro"><span class="eyebrow">RUANG ADMIN · GEMINI</span><h1 class="page-title">Pabrik soal.</h1><p class="page-sub">Buat soal baru sebagai draft, cek jawabannya, lalu aktifkan yang sudah layak dimainkan.</p></div>
+      <section class="panel admin-generator">
+        <div class="admin-panel-title"><div><span class="admin-icon">✦</span><div><h2>Buat soal baru</h2><p>Soal buatan AI masuk ke tab draft untuk ditinjau.</p></div></div><span class="provider-chip">GEMINI · SERVER-SIDE</span></div>
+        <form id="admin-form">
+          <label class="field-label" for="admin-token">Token admin <small>· diminta oleh backend Anda</small></label>
+          <input class="input" id="admin-token" type="password" autocomplete="current-password" placeholder="Masukkan AI_ADMIN_TOKEN" required />
+          <div class="admin-fields">
+            <div><label class="field-label" for="category">Kategori</label><input class="input" id="category" maxlength="60" value="Pengetahuan umum" /></div>
+            <div><label class="field-label" for="difficulty">Kesulitan</label><select class="select" id="difficulty"><option value="mudah">Mudah</option><option value="sedang" selected>Sedang</option><option value="sulit">Sulit</option></select></div>
+            <div><label class="field-label" for="count">Jumlah soal</label><select class="select" id="count"><option>3</option><option selected>5</option><option>10</option></select></div>
+          </div>
+          <div class="admin-actions"><button class="btn btn-primary" id="generate-btn" type="submit">✦ Generate soal</button><span class="admin-status" id="admin-status">API key tetap tersimpan di backend.</span></div>
+        </form>
+        <div class="setup-hint" id="setup-hint" hidden></div>
+      </section>
+      <section class="bank-section">
+        <div class="bank-header"><div><span class="eyebrow">CACHE SOAL</span><h2>Bank soal</h2></div><button class="btn btn-outline btn-small" id="refresh-btn">↻ Muat ulang</button></div>
+        <nav class="bank-tabs" aria-label="Status soal"><button class="bank-tab active" data-status="draft">Perlu ditinjau <span id="count-draft">0</span></button><button class="bank-tab" data-status="active">Aktif <span id="count-active">0</span></button><button class="bank-tab" data-status="rejected">Ditolak <span id="count-rejected">0</span></button></nav>
+        <div id="question-list" class="question-list"><div class="empty-bank"><span>🧠</span><strong>Belum ada soal yang dimuat</strong><p>Masukkan token admin, lalu tekan muat ulang atau buat soal baru.</p></div></div>
+      </section>
+      <div class="security-note">🔒 Gemini API key hanya digunakan backend. Token admin hanya tersimpan di memori tab ini, tidak disimpan ke browser.</div>
+    </main>
+    <footer><span>ADU IQ <b>·</b> PANEL ADMIN</span><span>Periksa soal sebelum dipakai pemain.</span></footer>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>

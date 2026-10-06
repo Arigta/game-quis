@@ -1,0 +1,317 @@
+.admin-main {
+  max-width: 850px;
+  margin: 0 auto;
+}
+.admin-intro {
+  margin: 17px 0 25px;
+}
+.admin-intro .page-title {
+  font-size: 44px;
+  margin: 9px 0;
+}
+.admin-intro .page-sub {
+  max-width: 540px;
+  margin: 0;
+}
+.admin-generator {
+  padding: 24px 27px;
+}
+.admin-panel-title,
+.admin-panel-title > div,
+.admin-actions,
+.bank-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.admin-panel-title > div {
+  justify-content: flex-start;
+}
+.admin-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #ddceff;
+  background: #30254d;
+  border: 1px solid #51417c;
+  font-size: 20px;
+  box-shadow: 0 0 22px #8c72ff2c;
+}
+.admin-panel-title h2,
+.bank-header h2 {
+  margin: 0;
+  font: 700 18px "Space Grotesk";
+}
+.admin-panel-title p {
+  margin: 4px 0 0;
+  color: #a6a9c3;
+  font-size: 12px;
+}
+.provider-chip {
+  color: #c8bcff;
+  background: #28213f;
+  border: 1px solid #4a3b70;
+  border-radius: 99px;
+  padding: 7px 10px;
+  white-space: nowrap;
+  font: 700 9px "Space Grotesk";
+  letter-spacing: 0.5px;
+}
+.admin-generator form {
+  margin-top: 22px;
+}
+.field-label small {
+  font-weight: 500;
+  color: #8388a3;
+}
+.admin-fields {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.7fr;
+  gap: 12px;
+  margin-top: 17px;
+}
+.admin-fields .field-label {
+  margin-bottom: 8px;
+}
+.admin-actions {
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+.admin-status {
+  font-size: 11px;
+  color: #9fa4bd;
+}
+.admin-status.loading {
+  color: #c6b5ff;
+}
+.admin-status.success {
+  color: #75e6b7;
+}
+.admin-status.error {
+  color: #ff9aac;
+}
+.setup-hint {
+  margin-top: 14px;
+  padding: 13px 15px;
+  color: #ffe3a0;
+  background: #332a1c;
+  border: 1px solid #5f4c2f;
+  border-radius: 11px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.bank-section {
+  margin-top: 34px;
+}
+.bank-header {
+  align-items: flex-end;
+}
+.bank-header h2 {
+  font-size: 25px;
+  margin-top: 7px;
+}
+.bank-tabs {
+  display: flex;
+  gap: 7px;
+  margin: 17px 0 14px;
+  border-bottom: 1px solid #292f49;
+}
+.bank-tab {
+  border: 0;
+  background: none;
+  color: #9398b2;
+  padding: 11px 12px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-bottom: 2px solid transparent;
+  transition: 0.16s;
+}
+.bank-tab span {
+  margin-left: 5px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #242940;
+  color: #b9bdd0;
+  font: 700 9px "Space Grotesk";
+}
+.bank-tab.active {
+  color: #d9d0ff;
+  border-color: #a08aff;
+}
+.bank-tab.active span {
+  background: #392d63;
+  color: #ddd4ff;
+}
+.question-list {
+  display: grid;
+  gap: 11px;
+}
+.question-card {
+  background: linear-gradient(145deg, #171b2e, #121625);
+  border: 1px solid #303653;
+  border-radius: 15px;
+  padding: 17px 18px;
+  box-shadow: 0 10px 28px #0003;
+  animation: feedback-in 0.24s ease-out;
+}
+.question-card-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.question-card-head .category-tag {
+  font-size: 9px;
+}
+.status-chip {
+  margin-left: auto;
+  border-radius: 99px;
+  padding: 5px 8px;
+  background: #252940;
+  color: #c1c5d8;
+  font: 700 9px "Space Grotesk";
+  text-transform: uppercase;
+}
+.status-chip.active {
+  background: #123c32;
+  color: #a3f6d6;
+}
+.status-chip.rejected {
+  background: #3c1d2a;
+  color: #ffb7c3;
+}
+.question-card h3 {
+  margin: 0 0 10px;
+  color: #f5f4ff;
+  font: 600 15px/1.45 "DM Sans";
+}
+.draft-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.draft-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #101525;
+  border: 1px solid #292f48;
+  color: #bfc2d5;
+  font-size: 11px;
+}
+.draft-option.answer {
+  color: #a8ffdc;
+  background: #12332e;
+  border-color: #32755f;
+}
+.draft-explanation {
+  margin-top: 11px;
+  color: #a6a9c3;
+  font-size: 11px;
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid #7665c6;
+}
+.question-meta {
+  margin-top: 10px;
+  color: #777e9b;
+  font-size: 9px;
+}
+.question-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 13px;
+}
+.question-card-actions .btn {
+  padding: 9px 11px;
+  font-size: 9px;
+}
+.btn-success {
+  background: #164332;
+  color: #aaffda;
+  border: 1px solid #2b7658;
+  box-shadow: 0 3px 0 #0c251d;
+}
+.btn-danger {
+  background: #3a1d2b;
+  color: #ffbfca;
+  border: 1px solid #713b51;
+  box-shadow: 0 3px 0 #24111a;
+}
+.empty-bank {
+  padding: 30px 18px;
+  background: #111626;
+  border: 1px dashed #343b5c;
+  border-radius: 15px;
+  text-align: center;
+}
+.empty-bank span {
+  font-size: 28px;
+}
+.empty-bank strong {
+  display: block;
+  color: #f1f0ff;
+  margin: 8px;
+  font: 700 14px "Space Grotesk";
+}
+.empty-bank p {
+  margin: 0;
+  color: #959ab3;
+  font-size: 11px;
+}
+.security-note {
+  margin-top: 19px;
+  color: #858ba6;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.security-note:first-letter {
+  color: #63f5c0;
+}
+@media (max-width: 640px) {
+  .admin-generator {
+    padding: 19px;
+  }
+  .admin-panel-title {
+    align-items: flex-start;
+  }
+  .admin-panel-title > div {
+    align-items: flex-start;
+  }
+  .provider-chip {
+    font-size: 8px;
+  }
+  .admin-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-fields > div:first-child {
+    grid-column: 1/-1;
+  }
+  .admin-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bank-tab {
+    font-size: 10px;
+    padding: 10px 7px;
+  }
+  .draft-options {
+    grid-template-columns: 1fr;
+  }
+  .question-card {
+    padding: 14px;
+  }
+  .question-card-actions {
+    flex-wrap: wrap;
+  }
+  .admin-intro .page-title {
+    font-size: 38px;
+  }
+}

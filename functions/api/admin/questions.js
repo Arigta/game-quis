@@ -1,0 +1,30 @@
+import { json, requireAdmin } from "../../_shared.js";
+
+export async function onRequestGet({ request, env }) {
+  const auth = requireAdmin(request, env);
+  if (auth.error) return auth.error;
+  if (!env.QUESTION_CACHE) return json({ error: "Cache belum terhubung. Hubungkan KV namespace QUESTION_CACHE." }, 503);
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status");
+  const listing = await env.QUESTION_CACHE.list({ prefix: "question:", limit: 1000 });
+  const records = await Promise.all(listing.keys.map(key => env.QUESTION_CACHE.get(key.name, "json")));
+  return json({ questions: records.filter(item => item && (!status || item.status === status)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
+}
+
+export async function onRequestPatch({ request, env }) {
+  const auth = requireAdmin(request, env);
+  if (auth.error) return auth.error;
+  if (!env.QUESTION_CACHE) return json({ error: "Cache belum terhubung." }, 503);
+  let input;
+  try { input = await request.json(); } catch { return json({ error: "Isi permintaan harus berupa JSON." }, 400); }
+  const id = String(input.id || "").trim();
+  const status = String(input.status || "");
+  if (!id || !["draft", "active", "rejected"].includes(status)) return json({ error: "ID atau status tidak valid." }, 400);
+  const key = `question:${id}`;
+  const record = await env.QUESTION_CACHE.get(key, "json");
+  if (!record) return json({ error: "Soal tidak ditemukan atau cache sudah kedaluwarsa." }, 404);
+  record.status = status;
+  record.reviewedAt = new Date().toISOString();
+  await env.QUESTION_CACHE.put(key, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 90 });
+  return json({ question: record });
+}

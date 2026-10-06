@@ -1,0 +1,7 @@
+name = "adu-iq"
+compatibility_date = "2026-10-06"
+pages_build_output_dir = "."
+
+[vars]
+AI_PROVIDER = "gemini"
+GEMINI_MODEL = "gemini-2.5-flash"

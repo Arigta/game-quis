@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. Keep real secrets out of Git.
+GEMINI_API_KEY=
+AI_ADMIN_TOKEN=
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-2.5-flash
