@@ -9,3 +9,8 @@ GEMINI_MODEL = "gemini-3.5-flash-lite"
 [[kv_namespaces]]
 binding = "QUESTION_CACHE"
 id = "672cde5d19844e15bb9869359e6192fc"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "QuizRoom"
+script_name = "adu-iq-rooms"
