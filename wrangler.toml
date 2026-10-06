@@ -4,7 +4,7 @@ pages_build_output_dir = "."
 
 [vars]
 AI_PROVIDER = "gemini"
-GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 [[kv_namespaces]]
 binding = "QUESTION_CACHE"
