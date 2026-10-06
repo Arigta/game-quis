@@ -19,7 +19,7 @@ export class QuizRoom extends DurableObject {
       const questions = (Array.isArray(input.questions) ? input.questions : []).map(cleanQuestion).filter(Boolean).slice(0, 10);
       if (questions.length < 3) return reply({ error: "Soal untuk room belum cukup." }, 400);
       const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, joinedAt: Date.now() };
-      const next = { hostId: player.id, players: [player], questions, phase: "lobby", index: 0, endsAt: 0, answers: {}, expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
+      const next = { hostId: player.id, players: [player], questions, phase: "lobby", index: 0, endsAt: 0, answers: {}, chat: [], expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
       await this.ctx.storage.put("room", next);
       return reply({ playerId: player.id, token: player.token });
     }
@@ -55,8 +55,9 @@ export class QuizRoom extends DurableObject {
     return {
       type: "state", phase: room.phase, index: room.index, total: room.questions.length,
       endsAt: room.endsAt, now: Date.now(), isHost: room.hostId === playerId,
-      me: own ? { id: own.id, score: own.score, correct: own.correct, answered: room.answers[playerId] !== undefined, choice: room.answers[playerId]?.choice ?? null } : null,
-      players: room.players.map(p => ({ id: p.id, name: p.name, score: p.score, correct: p.correct, connected: this.ctx.getWebSockets().some(ws => ws.deserializeAttachment()?.playerId === p.id) })),
+      me: own ? { id: own.id, score: own.score, correct: own.correct, answered: room.answers[playerId] !== undefined, choice: room.answers[playerId]?.choice ?? null, muted: Boolean(own.muted) } : null,
+      players: room.players.map(p => ({ id: p.id, name: p.name, score: p.score, correct: p.correct, muted: Boolean(p.muted), connected: this.ctx.getWebSockets().some(ws => ws.deserializeAttachment()?.playerId === p.id) })),
+      chat: (room.chat || []).slice(-20),
       question: room.phase === "lobby" || room.phase === "finished" ? null : { q: question.q, a: question.a, cat: question.cat, trap: question.trap, ...(reveal ? { c: question.c, e: question.e } : {}) },
     };
   }
@@ -69,13 +70,47 @@ export class QuizRoom extends DurableObject {
     for (const ws of this.ctx.getWebSockets()) this.sendState(ws, room, ws.deserializeAttachment()?.playerId);
   }
 
+  broadcastEvent(event) {
+    const payload = JSON.stringify(event);
+    for (const ws of this.ctx.getWebSockets()) {
+      try { ws.send(payload); } catch {}
+    }
+  }
+
   async webSocketMessage(ws, raw) {
     let message;
     try { message = JSON.parse(raw); } catch { return; }
     const room = await this.ctx.storage.get("room");
     if (!room || room.expiresAt <= Date.now()) { ws.close(1000, "Room berakhir"); return; }
     const playerId = ws.deserializeAttachment()?.playerId;
-    if (!room.players.some(p => p.id === playerId)) return;
+    const sender = room.players.find(p => p.id === playerId);
+    if (!sender) return;
+    if (message.type === "chat") {
+      if (room.phase !== "question" && room.phase !== "reveal") return;
+      if (room.answers[playerId] === undefined) { ws.send(JSON.stringify({ type: "error", message: "Jawab soal dulu sebelum mengirim chat." })); return; }
+      if (sender.muted) { ws.send(JSON.stringify({ type: "error", message: "Chat kamu sedang dibisukan oleh host." })); return; }
+      const text = String(message.text || "").replace(/[\u0000-\u001F\u007F<>]/g, "").trim();
+      if (!text || Array.from(text).length > 120) { ws.send(JSON.stringify({ type: "error", message: "Pesan harus berisi 1–120 karakter." })); return; }
+      const now = Date.now();
+      if (now - (sender.lastChatAt || 0) < 2000) { ws.send(JSON.stringify({ type: "error", message: "Tunggu 2 detik sebelum mengirim lagi." })); return; }
+      if (text.toLocaleLowerCase() === sender.lastChatText && now - (sender.lastChatTextAt || 0) < 30000) { ws.send(JSON.stringify({ type: "error", message: "Pesan yang sama baru saja dikirim." })); return; }
+      sender.lastChatAt = now;
+      sender.lastChatTextAt = now;
+      sender.lastChatText = text.toLocaleLowerCase();
+      const entry = { id: crypto.randomUUID(), playerId, name: sender.name, text, at: now };
+      room.chat = [...(room.chat || []).slice(-39), entry];
+      await this.ctx.storage.put("room", room);
+      this.broadcastEvent({ type: "chat", entry });
+      return;
+    }
+    if (message.type === "mute" && playerId === room.hostId) {
+      const target = room.players.find(p => p.id === message.playerId && p.id !== room.hostId);
+      if (!target) return;
+      target.muted = !target.muted;
+      await this.ctx.storage.put("room", room);
+      await this.broadcast(room);
+      return;
+    }
     if (message.type === "start" && playerId === room.hostId && room.phase === "lobby") {
       const connected = new Set(this.ctx.getWebSockets().map(s => s.deserializeAttachment()?.playerId));
       if (connected.size < 2) { ws.send(JSON.stringify({ type: "error", message: "Tunggu minimal 2 pemain tersambung." })); return; }

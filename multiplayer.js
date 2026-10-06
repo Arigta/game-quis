@@ -3,10 +3,75 @@ let mpSocket = null;
 let mpState = null;
 let mpClock = null;
 let mpReconnect = null;
+let mpChatDraft = '';
+let mpLastChatAt = 0;
+const mpFlyingLayer = document.createElement('div');
+mpFlyingLayer.className = 'mp-flying-layer';
+mpFlyingLayer.setAttribute('aria-hidden', 'true');
+document.body.append(mpFlyingLayer);
+
+function mpFly(entry) {
+  if (screen !== 'mpQuiz' || localStorage.getItem('adu-motion') === 'false') return;
+  const bubble = document.createElement('div');
+  const vertical = Math.random() < 0.28;
+  bubble.className = `mp-flying-comment ${vertical ? 'mp-fly-vertical' : 'mp-fly-horizontal'}`;
+  bubble.style.setProperty('--lane', `${8 + Math.random() * 68}%`);
+  bubble.style.setProperty('--duration', `${5 + Math.random() * 3}s`);
+  bubble.style.setProperty('--hue', `${Math.floor(Math.random() * 80 + 225)}`);
+  const name = document.createElement('strong');
+  name.textContent = entry.name;
+  const text = document.createElement('span');
+  text.textContent = entry.text;
+  bubble.append(name, text);
+  mpFlyingLayer.append(bubble);
+  bubble.addEventListener('animationend', () => bubble.remove(), { once: true });
+}
+
+function mpChatHtml() {
+  const history = (mpState?.chat || []).slice(-12);
+  const canSend = Boolean(mpState?.me?.answered && !mpState.me.muted && (mpState.phase === 'question' || mpState.phase === 'reveal'));
+  return `<section class="panel mp-chat-panel"><div class="mp-chat-heading"><div><span class="eyebrow">LIVE CHAT</span><h3>Komentar pemain</h3></div><span class="mp-live-dot">● LANGSUNG</span></div><div class="mp-chat-list" id="mp-chat-list" role="log" aria-live="polite">${history.length ? history.map(entry => `<div class="mp-chat-line"><strong>${esc(entry.name)}</strong><span>${esc(entry.text)}</span></div>`).join('') : '<p class="mp-chat-empty">Belum ada komentar. Jawab soal dulu, lalu mulai obrolan!</p>'}</div><div class="mp-chat-composer"><input id="mp-chat-input" class="input" type="text" maxlength="120" placeholder="${canSend ? 'Ketik komentar singkat…' : mpState?.me?.muted ? 'Chat kamu dibisukan host' : 'Jawab soal dulu untuk mengirim chat'}" value="${esc(mpChatDraft)}" ${canSend ? '' : 'disabled'} autocomplete="off"/><button class="btn btn-primary btn-small" id="mp-chat-send" data-action="mp-chat" disabled>Kirim</button></div><div class="mp-chat-meta"><span>${canSend ? 'Satu pesan setiap 2 detik' : 'Kamu tetap bisa membaca komentar pemain lain'}</span><span id="mp-chat-count">${Array.from(mpChatDraft).length}/120</span></div></section>`;
+}
+
+function mpUpdateComposer() {
+  const input = document.querySelector('#mp-chat-input');
+  const count = document.querySelector('#mp-chat-count');
+  const send = document.querySelector('#mp-chat-send');
+  if (!input || !count || !send) return;
+  mpChatDraft = input.value;
+  const size = Array.from(mpChatDraft).length;
+  count.textContent = `${size}/120`;
+  send.disabled = !mpState?.me?.answered || Boolean(mpState.me.muted) || !mpChatDraft.trim() || size > 120 || Date.now() - mpLastChatAt < 2000 || mpSocket?.readyState !== WebSocket.OPEN;
+}
+
+function mpAppendChat(entry) {
+  if (!mpState) return;
+  if (!mpState.chat) mpState.chat = [];
+  if (mpState.chat.some(item => item.id === entry.id)) return;
+  mpState.chat.push(entry);
+  mpState.chat = mpState.chat.slice(-40);
+  const list = document.querySelector('#mp-chat-list');
+  if (list) {
+    list.querySelector('.mp-chat-empty')?.remove();
+    const line = document.createElement('div');
+    line.className = 'mp-chat-line';
+    const name = document.createElement('strong');
+    name.textContent = entry.name;
+    const text = document.createElement('span');
+    text.textContent = entry.text;
+    line.append(name, text);
+    list.append(line);
+    while (list.children.length > 12) list.firstElementChild.remove();
+    list.scrollTop = list.scrollHeight;
+  }
+  mpFly(entry);
+}
 
 function mpLeave() {
   clearInterval(mpClock);
   clearTimeout(mpReconnect);
+  mpFlyingLayer.replaceChildren();
+  mpChatDraft = '';
   mpSession = null;
   mpState = null;
   if (mpSocket) { mpSocket.onclose = null; mpSocket.close(); mpSocket = null; }
@@ -23,12 +88,15 @@ function mpConnect() {
     let data;
     try { data = JSON.parse(event.data); } catch { return; }
     if (data.type === 'error') { toast(data.message); return; }
+    if (data.type === 'chat') { mpAppendChat(data.entry); return; }
     if (data.type !== 'state') return;
+    mpChatDraft = document.querySelector('#mp-chat-input')?.value ?? mpChatDraft;
     mpState = data;
     const target = data.phase === 'lobby' ? 'lobby' : data.phase === 'finished' ? 'mpResults' : 'mpQuiz';
     if (screen !== target) setScreen(target);
     else render();
     mpUpdateClock();
+    mpUpdateComposer();
   };
   mpSocket.onclose = () => {
     if (!mpSession) return;
@@ -53,7 +121,7 @@ function mpUpdateClock() {
 }
 
 function mpPlayers() {
-  return `<div class="mp-scoreboard">${mpState.players.map((p, i) => `<div class="player-row"><span class="player-dot">${esc(p.name[0] || 'P')}</span><strong>${i + 1}. ${esc(p.name)}${p.id === mpState.me?.id ? ' (kamu)' : ''}</strong><small>${p.connected ? '● ' : '○ '}${p.score.toLocaleString('id-ID')} poin</small></div>`).join('')}</div>`;
+  return `<div class="mp-scoreboard">${mpState.players.map((p, i) => `<div class="player-row"><span class="player-dot">${esc(p.name[0] || 'P')}</span><strong>${i + 1}. ${esc(p.name)}${p.id === mpState.me?.id ? ' (kamu)' : ''}</strong><small>${p.connected ? '● ' : '○ '}${p.score.toLocaleString('id-ID')} poin</small>${mpState.isHost && p.id !== mpState.me?.id && screen === 'mpQuiz' ? `<button class="mp-mute-btn" data-action="mp-mute" data-player-id="${esc(p.id)}">${p.muted ? 'Buka bisu' : 'Bisukan'}</button>` : ''}</div>`).join('')}</div>`;
 }
 
 window.mpRenderLobby = function () {
@@ -67,8 +135,9 @@ window.mpRenderQuiz = function () {
   const reveal = mpState.phase === 'reveal';
   const answered = mpState.me?.answered;
   const progress = mpState.index / mpState.total * 100;
-  app.innerHTML = `<div class="page-wrap"><button class="back-link" data-action="mp-leave">← Keluar dari room</button><div class="quiz-top"><span class="progress-label">ROOM ${esc(mpSession.code)} · SOAL <b>${mpState.index + 1}</b> / ${mpState.total}</span><div id="mp-timer" class="timer">0</div></div><div class="progress"><div style="width:${progress}%"></div></div><section class="panel"><span class="category-tag">${esc(q.cat)}${q.trap ? ' · ⚠ Jebakan' : ''}</span><h2 class="question">${esc(q.q)}</h2><div class="answers">${q.a.map((option, i) => `<button class="answer ${reveal && i === q.c ? 'correct' : ''} ${reveal && answered && i === mpState.me.choice && i !== q.c ? 'wrong' : ''}" data-action="mp-answer" data-choice="${i}" ${answered || reveal ? 'disabled' : ''}><span class="letter">${'ABCD'[i]}</span><span>${esc(option)}</span></button>`).join('')}</div>${reveal ? `<div class="feedback show good"><strong>Jawaban: ${'ABCD'[q.c]}.</strong> ${esc(q.e)}</div>` : answered ? '<div class="feedback show good">Jawaban terkirim. Menunggu pemain lain…</div>' : ''}<div class="quiz-bottom"><span>${reveal ? 'Soal berikutnya segera dimulai' : 'Jawab sebelum waktu habis'}</span><span class="score-chip">⭐ ${mpState.me.score.toLocaleString('id-ID')} poin</span></div></section><section class="panel mp-players-panel"><h3>Papan skor</h3>${mpPlayers()}</section></div>`;
+  app.innerHTML = `<div class="page-wrap"><button class="back-link" data-action="mp-leave">← Keluar dari room</button><div class="quiz-top"><span class="progress-label">ROOM ${esc(mpSession.code)} · SOAL <b>${mpState.index + 1}</b> / ${mpState.total}</span><div id="mp-timer" class="timer">0</div></div><div class="progress"><div style="width:${progress}%"></div></div><section class="panel"><span class="category-tag">${esc(q.cat)}${q.trap ? ' · ⚠ Jebakan' : ''}</span><h2 class="question">${esc(q.q)}</h2><div class="answers">${q.a.map((option, i) => `<button class="answer ${reveal && i === q.c ? 'correct' : ''} ${reveal && answered && i === mpState.me.choice && i !== q.c ? 'wrong' : ''}" data-action="mp-answer" data-choice="${i}" ${answered || reveal ? 'disabled' : ''}><span class="letter">${'ABCD'[i]}</span><span>${esc(option)}</span></button>`).join('')}</div>${reveal ? `<div class="feedback show good"><strong>Jawaban: ${'ABCD'[q.c]}.</strong> ${esc(q.e)}</div>` : answered ? '<div class="feedback show good">Jawaban terkirim. Menunggu pemain lain…</div>' : ''}<div class="quiz-bottom"><span>${reveal ? 'Soal berikutnya segera dimulai' : 'Jawab sebelum waktu habis'}</span><span class="score-chip">⭐ ${mpState.me.score.toLocaleString('id-ID')} poin</span></div></section>${mpChatHtml()}<section class="panel mp-players-panel"><h3>Papan skor</h3>${mpPlayers()}</section></div>`;
   mpUpdateClock();
+  mpUpdateComposer();
 };
 
 window.mpRenderResults = function () {
@@ -88,6 +157,21 @@ async function mpRequest(path, body) {
 
 window.mpAction = async function (action, button) {
   if (action === 'mp-leave') { mpLeave(); home(); return; }
+  if (action === 'mp-chat') {
+    const text = document.querySelector('#mp-chat-input')?.value.trim() || '';
+    if (!mpState?.me?.answered || mpState.me.muted || !text || Array.from(text).length > 120 || Date.now() - mpLastChatAt < 2000 || mpSocket?.readyState !== WebSocket.OPEN) return;
+    mpSocket.send(JSON.stringify({ type: 'chat', text }));
+    mpLastChatAt = Date.now();
+    mpChatDraft = '';
+    document.querySelector('#mp-chat-input').value = '';
+    mpUpdateComposer();
+    setTimeout(mpUpdateComposer, 2050);
+    return;
+  }
+  if (action === 'mp-mute') {
+    if (mpState?.isHost && mpSocket?.readyState === WebSocket.OPEN) mpSocket.send(JSON.stringify({ type: 'mute', playerId: button.dataset.playerId }));
+    return;
+  }
   if (action === 'mp-copy') {
     const link = `${location.origin}/?room=${mpSession.code}`;
     navigator.clipboard?.writeText(link).then(() => toast('Tautan undangan disalin!')).catch(() => toast(`Kode room: ${mpSession.code}`));
@@ -139,6 +223,18 @@ app.addEventListener('click', event => {
   if (action?.startsWith('mp-')) { event.stopImmediatePropagation(); window.mpAction(action, button); }
   else if (action === 'home' && mpSession) mpLeave();
 }, true);
+
+app.addEventListener('input', event => {
+  if (event.target.id === 'mp-chat-input') mpUpdateComposer();
+});
+
+app.addEventListener('keydown', event => {
+  if (event.target.id === 'mp-chat-input' && event.key === 'Enter') {
+    event.preventDefault();
+    const button = document.querySelector('#mp-chat-send');
+    if (button && !button.disabled) window.mpAction('mp-chat', button);
+  }
+});
 
 const saved = sessionStorage.getItem('adu-mp-session');
 if (saved) {

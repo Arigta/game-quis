@@ -2,6 +2,8 @@
 
 Mode room memakai **Cloudflare Durable Object** agar 2–8 pemain di perangkat berbeda mendapat soal, timer, dan papan skor yang sama melalui WebSocket. Host membuat room dan membagikan tautan; host memulai setelah minimal dua pemain tersambung. Setiap soal berlangsung 60 detik, skor benar 500–1000 poin berdasarkan kecepatan, lalu jawaban ditampilkan selama 5 detik. Room kedaluwarsa setelah 2 jam.
 
+Selama kuis, panel live chat selalu terlihat. Pemain dapat mengirim pesan setelah menjawab soal pada ronde berjalan; pemain yang belum menjawab hanya dapat membaca. Pesan maksimal 120 karakter, satu pesan setiap 2 detik, dan pengulangan pesan yang sama dalam 30 detik ditolak. Komentar baru melintas pada jalur dan arah acak seperti komentar siaran langsung. Host dapat membisukan pemain dari papan skor. Animasi mengikuti pilihan pengaturan animasi pemain.
+
 ## Deploy server room
 
 Cloudflare Pages tidak bisa membuat kelas Durable Object di proyek Pages itu sendiri. Worker pendamping harus di-deploy satu kali pada akun Cloudflare yang sama:
