@@ -8,4 +8,4 @@ GEMINI_MODEL = "gemini-3.7-flash"
 
 [[kv_namespaces]]
 binding = "QUESTION_CACHE"
-id = "ISI_NAMESPACE_ID_DI_SINI"
+id = "672cde5d19844e15bb9869359e6192fc"
