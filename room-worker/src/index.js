@@ -18,7 +18,7 @@ export class QuizRoom extends DurableObject {
       const input = await request.json().catch(() => ({}));
       const questions = (Array.isArray(input.questions) ? input.questions : []).map(cleanQuestion).filter(Boolean).slice(0, 10);
       if (questions.length < 3) return reply({ error: "Soal untuk room belum cukup." }, 400);
-      const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, joinedAt: Date.now() };
+      const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, review: [], joinedAt: Date.now() };
       const next = { hostId: player.id, players: [player], questions, phase: "lobby", index: 0, endsAt: 0, answers: {}, chat: [], expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
       await this.ctx.storage.put("room", next);
       return reply({ playerId: player.id, token: player.token });
@@ -28,7 +28,7 @@ export class QuizRoom extends DurableObject {
       if (room.phase !== "lobby") return reply({ error: "Pertandingan sudah dimulai." }, 409);
       if (room.players.length >= 8) return reply({ error: "Room sudah penuh (maksimal 8 pemain)." }, 409);
       const input = await request.json().catch(() => ({}));
-      const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, joinedAt: Date.now() };
+      const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, review: [], joinedAt: Date.now() };
       room.players.push(player);
       await this.ctx.storage.put("room", room);
       await this.broadcast(room);
@@ -57,6 +57,14 @@ export class QuizRoom extends DurableObject {
       endsAt: room.endsAt, now: Date.now(), isHost: room.hostId === playerId,
       me: own ? { id: own.id, score: own.score, correct: own.correct, answered: room.answers[playerId] !== undefined, choice: room.answers[playerId]?.choice ?? null, muted: Boolean(own.muted) } : null,
       players: room.players.map(p => ({ id: p.id, name: p.name, score: p.score, correct: p.correct, muted: Boolean(p.muted), connected: this.ctx.getWebSockets().some(ws => ws.deserializeAttachment()?.playerId === p.id) })),
+      ...(room.phase === "finished" ? { results: room.players.map(p => ({
+        id: p.id, name: p.name, score: p.score, correct: p.correct,
+        averageSeconds: p.review?.length ? Math.round(p.review.reduce((sum, item) => sum + item.elapsedSeconds, 0) / p.review.length) : 0,
+        answers: room.questions.map((q, index) => {
+          const record = p.review?.find(item => item.index === index);
+          return { index, question: q.q, options: q.a, correctIndex: q.c, explanation: q.e, choice: record?.choice ?? null, points: record?.points ?? 0, elapsedSeconds: record?.elapsedSeconds ?? null };
+        }),
+      })) } : {}),
       chat: (room.chat || []).slice(-20),
       question: room.phase === "lobby" || room.phase === "finished" ? null : { q: question.q, a: question.a, cat: question.cat, trap: question.trap, ...(reveal ? { c: question.c, e: question.e } : {}) },
     };
@@ -131,6 +139,8 @@ export class QuizRoom extends DurableObject {
       const points = correct ? Math.round(500 + 500 * remaining / 60000) : 0;
       player.score += points;
       if (correct) player.correct++;
+      player.review ||= [];
+      player.review.push({ index: room.index, choice: message.choice, points, elapsedSeconds: Math.round((60000 - remaining) / 1000) });
       room.answers[playerId] = { choice: message.choice, points };
       const connected = new Set(this.ctx.getWebSockets().map(s => s.deserializeAttachment()?.playerId));
       if ([...connected].every(id => room.answers[id] !== undefined)) {

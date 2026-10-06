@@ -6,6 +6,8 @@ Selama kuis, panel live chat selalu terlihat. Pemain dapat mengirim pesan setela
 
 Di layar ponsel, panel chat menempel di bagian bawah selama kuis agar tetap terlihat ketika pemain menggulir soal dan jawaban.
 
+Setelah pertandingan selesai, ketuk nama siapa pun pada peringkat akhir untuk melihat total poin, jawaban benar, rata-rata waktu menjawab, dan rincian jawaban per soal. Rincian baru dikirim server sesudah pertandingan berakhir, sehingga jawaban pemain lain tidak terlihat selama kuis berlangsung.
+
 ## Deploy server room
 
 Cloudflare Pages tidak bisa membuat kelas Durable Object di proyek Pages itu sendiri. Worker pendamping harus di-deploy satu kali pada akun Cloudflare yang sama:

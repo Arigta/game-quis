@@ -5,6 +5,7 @@ let mpClock = null;
 let mpReconnect = null;
 let mpChatDraft = '';
 let mpLastChatAt = 0;
+let mpSelectedResultId = null;
 const mpFlyingLayer = document.createElement('div');
 mpFlyingLayer.className = 'mp-flying-layer';
 mpFlyingLayer.setAttribute('aria-hidden', 'true');
@@ -83,6 +84,7 @@ function mpLeave() {
   clearTimeout(mpReconnect);
   mpFlyingLayer.replaceChildren();
   mpChatDraft = '';
+  mpSelectedResultId = null;
   mpSession = null;
   mpState = null;
   if (mpSocket) { mpSocket.onclose = null; mpSocket.close(); mpSocket = null; }
@@ -178,11 +180,24 @@ window.mpRenderQuiz = function () {
   mpUpdateComposer();
 };
 
+function mpResultDetailHtml() {
+  const selected = mpState.results?.find(item => item.id === mpSelectedResultId);
+  if (!selected) return '<p class="page-sub">Ringkasan pemain belum tersedia.</p>';
+  return `<div class="mp-result-summary"><h3>Hasil ${esc(selected.name)}${selected.id === mpState.me?.id ? ' (kamu)' : ''}</h3><div class="result-stats"><div class="stat"><strong>${selected.score.toLocaleString('id-ID')}</strong><span>Total poin</span></div><div class="stat"><strong>${selected.correct}/${mpState.total}</strong><span>Jawaban benar</span></div><div class="stat"><strong>${selected.averageSeconds} dtk</strong><span>Rata-rata menjawab</span></div></div><h3 class="mp-result-subtitle">Rincian soal</h3><div class="review-list">${selected.answers.map(item => {
+    const missed = item.choice === null;
+    const correct = item.choice === item.correctIndex;
+    const answer = missed ? 'Tidak dijawab' : `${'ABCD'[item.choice]}. ${esc(item.options[item.choice] || '')}`;
+    const key = `${'ABCD'[item.correctIndex]}. ${esc(item.options[item.correctIndex] || '')}`;
+    return `<article class="mp-review-card"><div class="mp-review-head"><strong>${correct ? '✅' : missed ? '⏱️' : '❌'} Soal ${item.index + 1}</strong><span>${item.points.toLocaleString('id-ID')} poin</span></div><p>${esc(item.question)}</p><small>Jawaban ${esc(selected.name)}: ${answer}${item.elapsedSeconds !== null ? ` · ${item.elapsedSeconds} dtk` : ''}</small><small>Jawaban benar: ${key}</small><small>${esc(item.explanation || '')}</small></article>`;
+  }).join('')}</div></div>`;
+}
+
 window.mpRenderResults = function () {
   if (!mpState) return;
-  const ranked = [...mpState.players].sort((a, b) => b.score - a.score);
+  const ranked = [...mpState.players].sort((a, b) => b.score - a.score || b.correct - a.correct || (mpState.results?.find(x => x.id === a.id)?.averageSeconds ?? 60) - (mpState.results?.find(x => x.id === b.id)?.averageSeconds ?? 60));
   const rank = ranked.findIndex(p => p.id === mpState.me?.id) + 1;
-  app.innerHTML = `<div class="page-wrap"><div class="result-head"><div class="result-emoji">${rank === 1 ? '🏆' : '🎮'}</div><span class="eyebrow">Pertandingan selesai</span><h1 class="page-title">${rank === 1 ? 'Kamu juaranya!' : `Peringkat ${rank}`}</h1><p>Semua pemain sudah menyelesaikan ${mpState.total} soal.</p><div class="result-score">${mpState.me.score.toLocaleString('id-ID')} <small>POIN</small></div></div><section class="panel"><h3>Papan skor akhir</h3>${mpPlayers()}<button class="btn btn-primary full" data-action="mp-leave" style="margin-top:20px">Kembali ke menu</button></section></div>`;
+  if (!mpSelectedResultId || !mpState.results?.some(item => item.id === mpSelectedResultId)) mpSelectedResultId = mpState.me?.id;
+  app.innerHTML = `<div class="page-wrap"><div class="result-head"><div class="result-emoji">${rank === 1 ? '🏆' : '🎮'}</div><span class="eyebrow">Pertandingan selesai</span><h1 class="page-title">${rank === 1 ? 'Kamu juaranya!' : `Peringkat ${rank}`}</h1><p>Ketuk nama pemain untuk melihat ringkasan jawaban mereka.</p><div class="result-score">${mpState.me.score.toLocaleString('id-ID')} <small>POIN</small></div></div><section class="panel"><h3 class="mp-result-subtitle">Peringkat akhir</h3><div class="mp-result-players">${ranked.map((p, index) => `<button class="mp-result-player ${p.id === mpSelectedResultId ? 'selected' : ''}" data-action="mp-inspect" data-player-id="${esc(p.id)}"><span class="player-dot">${esc(p.name[0] || 'P')}</span><strong>${index + 1}. ${esc(p.name)}${p.id === mpState.me?.id ? ' (kamu)' : ''}</strong><span>${p.score.toLocaleString('id-ID')} poin →</span></button>`).join('')}</div><div id="mp-result-detail">${mpResultDetailHtml()}</div><button class="btn btn-primary full" data-action="mp-leave" style="margin-top:20px">Kembali ke menu</button></section></div>`;
   if (rank === 1) confettiBurst();
 };
 
@@ -195,6 +210,13 @@ async function mpRequest(path, body) {
 
 window.mpAction = async function (action, button) {
   if (action === 'mp-leave') { mpLeave(); home(); return; }
+  if (action === 'mp-inspect') {
+    mpSelectedResultId = button.dataset.playerId;
+    document.querySelectorAll('.mp-result-player').forEach(item => item.classList.toggle('selected', item.dataset.playerId === mpSelectedResultId));
+    const detail = document.querySelector('#mp-result-detail');
+    if (detail) detail.innerHTML = mpResultDetailHtml();
+    return;
+  }
   if (action === 'mp-chat') {
     const text = document.querySelector('#mp-chat-input')?.value.trim() || '';
     if (!mpState?.me?.answered || mpState.me.muted || !text || Array.from(text).length > 120 || Date.now() - mpLastChatAt < 2000 || mpSocket?.readyState !== WebSocket.OPEN) return;
