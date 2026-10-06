@@ -4,4 +4,8 @@ pages_build_output_dir = "."
 
 [vars]
 AI_PROVIDER = "gemini"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.7-flash"
+
+[[kv_namespaces]]
+binding = "QUESTION_CACHE"
+id = "ISI_NAMESPACE_ID_DI_SINI"
