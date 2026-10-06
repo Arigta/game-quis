@@ -4,6 +4,8 @@ Mode room memakai **Cloudflare Durable Object** agar 2–8 pemain di perangkat b
 
 Selama kuis, panel live chat selalu terlihat. Pemain dapat mengirim pesan setelah menjawab soal pada ronde berjalan; pemain yang belum menjawab hanya dapat membaca. Pesan maksimal 120 karakter, satu pesan setiap 2 detik, dan pengulangan pesan yang sama dalam 30 detik ditolak. Komentar baru melintas pada jalur dan arah acak seperti komentar siaran langsung. Host dapat membisukan pemain dari papan skor. Animasi mengikuti pilihan pengaturan animasi pemain.
 
+Di layar ponsel, panel chat menempel di bagian bawah selama kuis agar tetap terlihat ketika pemain menggulir soal dan jawaban.
+
 ## Deploy server room
 
 Cloudflare Pages tidak bisa membuat kelas Durable Object di proyek Pages itu sendiri. Worker pendamping harus di-deploy satu kali pada akun Cloudflare yang sama:
