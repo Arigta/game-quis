@@ -14,7 +14,8 @@ Game kuis berbahasa Indonesia yang bisa dimainkan sendiri atau bersama teman di 
 | Kuis serentak | Semua pemain mendapat urutan soal dan timer yang sama. Server room mengunci jawaban, menghitung skor, dan memindahkan ronde. |
 | Live chat | Terlihat selama kuis. Pemain dapat mengirim pesan setelah menjawab soal pada ronde berjalan; sebelumnya hanya dapat membaca. Komentar baru melintas di layar seperti komentar siaran langsung. |
 | Hasil multiplayer | Peringkat per pertandingan. Ketuk nama pemain untuk melihat skor, jumlah jawaban benar, rata-rata waktu menjawab, dan rincian tiap soal. |
-| Bank soal AI | Gemini membuat draft soal melalui backend. Admin meninjau dan mengaktifkan soal sebelum soal itu dapat dipakai. |
+| Bank soal | Gemini membuat draft untuk ditinjau admin. Admin juga dapat menulis soal manual langsung ke bank. |
+| Soal khusus room | Host memilih 3–20 soal dari bank aktif atau membuat soal AI/manual sementara dengan token admin. |
 | Tampilan game | Responsif, animasi transisi dan pilihan jawaban, efek suara opsional, serta pengaturan animasi. |
 
 ## Cara bermain
@@ -27,11 +28,11 @@ Game kuis berbahasa Indonesia yang bisa dimainkan sendiri atau bersama teman di 
 
 ### Bersama teman
 
-1. Satu pemain memilih **Bermain bersama → Buat room privat**.
+1. Satu pemain memilih **Bermain bersama → Buat room privat**, lalu menentukan sumber, materi, kesulitan, dan jumlah soal (3–20). AI dan manual khusus room memerlukan token admin.
 2. Bagikan tautan undangan atau kode room enam karakter.
 3. Teman membuka tautan atau memilih **Gabung room** dan memasukkan kode.
 4. Setelah minimal dua pemain tersambung, host menekan **Mulai pertandingan**.
-5. Jawab 10 soal. Satu soal memiliki waktu 60 detik. Ronde berikutnya dimulai ketika semua pemain yang tersambung telah menjawab atau waktu habis.
+5. Jawab sejumlah soal yang dipilih. Satu soal memiliki waktu 60 detik. Ronde berikutnya dimulai ketika semua pemain yang tersambung telah menjawab atau waktu habis.
 6. Setelah menjawab, pemain dapat mengirim chat sambil menunggu. Di akhir pertandingan, ketuk nama pada peringkat untuk melihat ringkasan pemain tersebut.
 
 Jawaban benar mendapat **500 poin dasar + bonus kecepatan sampai 500 poin**. Jawaban salah atau kosong mendapat 0. Skor dan batas waktu dihitung oleh server room.
@@ -54,7 +55,7 @@ Jawaban benar mendapat **500 poin dasar + bonus kecepatan sampai 500 poin**. Jaw
 - `room-worker/wrangler.toml`: konfigurasi Worker room.
 - `.dev.vars.example`: contoh nama variabel untuk pengembangan lokal; tidak berisi kunci asli.
 
-Alur singkat: **browser → Cloudflare Pages Functions → Durable Object room**. Bank soal aktif disimpan di Cloudflare KV. Gemini hanya dipanggil dari backend admin untuk membuat draft, bukan saat pemain menjawab.
+Alur singkat: **browser → Cloudflare Pages Functions → Durable Object room**. Bank soal aktif disimpan di Cloudflare KV. Gemini dipanggil dari backend untuk membuat draft bank atau soal sementara saat room dibuat, bukan saat pemain menjawab.
 
 ## Menjalankan secara lokal
 
@@ -101,6 +102,8 @@ Konfigurasi saat ini memakai `AI_PROVIDER=gemini` dan `GEMINI_MODEL=gemini-3.5-f
 4. Tinjau draft. Aktifkan hanya soal yang jawaban dan penjelasannya sudah benar.
 5. Soal aktif akan masuk kumpulan soal untuk permainan berikutnya. Jika Gemini sedang gagal, game tetap bisa memakai soal bawaan.
 
+Admin juga dapat mengisi formulir **Tambah soal manual** di halaman yang sama. Soal manual tersimpan di bank sebagai soal aktif. Saat host memilih soal AI atau manual khusus room, soal tersebut tidak disimpan ke bank. Hasil room tersedia 15 menit setelah pertandingan, kemudian seluruh data room dihapus.
+
 Detail endpoint dan alur AI ada di [README-AI.md](README-AI.md); detail server room di [README-MULTIPLAYER.md](README-MULTIPLAYER.md).
 
 ## Keamanan dan batasan saat ini
@@ -108,7 +111,7 @@ Detail endpoint dan alur AI ada di [README-AI.md](README-AI.md); detail server r
 - Token admin dan kunci Gemini disimpan sebagai secret backend. Jika pernah terlanjur terpublikasi, cabut dan buat kunci baru.
 - Room memakai kode undangan privat, bukan akun. Siapa pun yang mengetahui kode dapat masuk selama lobby masih terbuka. Room kedaluwarsa setelah sekitar 2 jam.
 - Pemain yang terputus dapat kembali lewat tab yang sama selama sesi browser masih tersimpan. Room yang sudah mulai tidak menerima pemain baru.
-- Host memilih kumpulan soal dari browser saat membuat room. Skor dan timer dihitung server, tetapi klien yang dimodifikasi masih dapat mengirim soal buatan sendiri saat membuat room.
+- Soal bank dipilih backend dari soal aktif. Soal AI dan manual khusus room memerlukan token admin; jangan membagikan token kepada pemain lain.
 - Peringkat yang tersedia adalah **peringkat per pertandingan**, bukan leaderboard global. Status siap pemain, pemindahan host otomatis, dan fitur olokan preset dari PRD belum tersedia.
 - Layanan Cloudflare dan Gemini memiliki kuota serta aturan biaya yang dapat berubah. Periksa [harga Pages](https://developers.cloudflare.com/pages/functions/pricing/), [Durable Objects](https://developers.cloudflare.com/durable-objects/platform/pricing/), dan [Gemini API](https://ai.google.dev/gemini-api/docs/billing/) sebelum penggunaan besar.
 

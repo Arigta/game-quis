@@ -1,4 +1,17 @@
-import { json, requireAdmin } from "../../_shared.js";
+import { json, requireAdmin, validateQuestion } from "../../_shared.js";
+
+export async function onRequestPost({ request, env }) {
+  const auth = requireAdmin(request, env);
+  if (auth.error) return auth.error;
+  if (!env.QUESTION_CACHE) return json({ error: "Bank soal belum terhubung." }, 503);
+  let input;
+  try { input = await request.json(); } catch { return json({ error: "Isi permintaan harus berupa JSON." }, 400); }
+  const clean = validateQuestion(input);
+  if (!clean) return json({ error: "Soal tidak valid. Isi pertanyaan (15–320 karakter), empat opsi berbeda, jawaban benar, dan penjelasan (8–500 karakter)." }, 400);
+  const record = { id: crypto.randomUUID(), question: clean.q, options: clean.a, answerIndex: clean.c, explanation: clean.e, category: clean.cat, difficulty: ["mudah", "sedang", "sulit"].includes(input.difficulty) ? input.difficulty : "sedang", isTrap: clean.trap, source: "manual", status: "active", createdAt: new Date().toISOString() };
+  await env.QUESTION_CACHE.put(`question:${record.id}`, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 90 });
+  return json({ question: record }, 201);
+}
 
 export async function onRequestGet({ request, env }) {
   const auth = requireAdmin(request, env);

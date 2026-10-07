@@ -34,6 +34,17 @@
         </form>
         <div class="setup-hint" id="setup-hint" hidden></div>
       </section>
+      <section class="panel admin-generator" style="margin-top:20px">
+        <div class="admin-panel-title"><div><span class="admin-icon">✎</span><div><h2>Tambah soal manual</h2><p>Hanya admin dengan token yang dapat menyimpan soal ke bank.</p></div></div></div>
+        <form id="manual-form">
+          <label class="field-label" for="manual-question">Pertanyaan</label><textarea class="input" id="manual-question" maxlength="320" rows="3" required></textarea>
+          <div class="manual-options"><input class="input" id="manual-a" maxlength="120" placeholder="Pilihan A" required /><input class="input" id="manual-b" maxlength="120" placeholder="Pilihan B" required /><input class="input" id="manual-c" maxlength="120" placeholder="Pilihan C" required /><input class="input" id="manual-d" maxlength="120" placeholder="Pilihan D" required /></div>
+          <div class="admin-fields"><div><label class="field-label" for="manual-category">Materi / kategori</label><input class="input" id="manual-category" maxlength="40" value="Pengetahuan umum" /></div><div><label class="field-label" for="manual-difficulty">Kesulitan</label><select class="select" id="manual-difficulty"><option value="mudah">Mudah</option><option value="sedang" selected>Sedang</option><option value="sulit">Sulit</option></select></div><div><label class="field-label" for="manual-correct">Jawaban benar</label><select class="select" id="manual-correct"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></div></div>
+          <label class="field-label" for="manual-explanation">Penjelasan jawaban</label><textarea class="input" id="manual-explanation" maxlength="500" rows="2" required></textarea>
+          <label class="manual-check"><input type="checkbox" id="manual-trap" /> Soal jebakan</label>
+          <div class="admin-actions"><button class="btn btn-primary" type="submit">＋ Simpan ke bank soal</button><span class="admin-status" id="manual-status"></span></div>
+        </form>
+      </section>
       <section class="bank-section">
         <div class="bank-header"><div><span class="eyebrow">CACHE SOAL</span><h2>Bank soal</h2></div><button class="btn btn-outline btn-small" id="refresh-btn">↻ Muat ulang</button></div>
         <nav class="bank-tabs" aria-label="Status soal"><button class="bank-tab active" data-status="draft">Perlu ditinjau <span id="count-draft">0</span></button><button class="bank-tab" data-status="active">Aktif <span id="count-active">0</span></button><button class="bank-tab" data-status="rejected">Ditolak <span id="count-rejected">0</span></button></nav>

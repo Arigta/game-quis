@@ -63,6 +63,9 @@
 .admin-generator form {
   margin-top: 22px;
 }
+.manual-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+.manual-check { display:flex; align-items:center; gap:8px; margin-top:15px; color:#bfc2d5; font-size:12px; }
+textarea.input { resize:vertical; min-height:76px; padding-top:12px; }
 .field-label small {
   font-weight: 500;
   color: #8388a3;
@@ -276,6 +279,7 @@
   color: #63f5c0;
 }
 @media (max-width: 640px) {
+  .manual-options { grid-template-columns:1fr; }
   .admin-generator {
     padding: 19px;
   }

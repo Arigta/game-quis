@@ -6,6 +6,24 @@ let mpReconnect = null;
 let mpChatDraft = '';
 let mpLastChatAt = 0;
 let mpSelectedResultId = null;
+function mpManualFields(index) {
+  return `<fieldset class="mp-manual-question"><legend>Soal ${index + 1}</legend><label class="field-label">Pertanyaan</label><textarea class="input mp-q" maxlength="320" rows="2" placeholder="Tulis pertanyaan…"></textarea><div class="mp-manual-options">${'ABCD'.split('').map(letter => `<input class="input mp-option" maxlength="120" placeholder="Pilihan ${letter}" />`).join('')}</div><label class="field-label">Jawaban benar</label><select class="select mp-correct">${'ABCD'.split('').map((letter, i) => `<option value="${i}">${letter}</option>`).join('')}</select><label class="field-label">Penjelasan</label><textarea class="input mp-explanation" maxlength="500" rows="2" placeholder="Jelaskan jawaban…"></textarea></fieldset>`;
+}
+
+function mpUpdateRoomForm() {
+  const source = document.querySelector('#room-source')?.value;
+  if (!source) return;
+  const count = Math.min(20, Math.max(3, Number(document.querySelector('#room-count').value) || 3));
+  document.querySelector('#room-admin-fields').hidden = source === 'bank';
+  const list = document.querySelector('#room-manual-list');
+  list.hidden = source !== 'manual';
+  if (source === 'manual') {
+    while (list.children.length < count) list.insertAdjacentHTML('beforeend', mpManualFields(list.children.length));
+    while (list.children.length > count) list.lastElementChild.remove();
+  }
+  const difficulty = document.querySelector('#room-difficulty');
+  if (source === 'ai' && !difficulty.value) difficulty.value = 'sedang';
+}
 const mpFlyingLayer = document.createElement('div');
 mpFlyingLayer.className = 'mp-flying-layer';
 mpFlyingLayer.setAttribute('aria-hidden', 'true');
@@ -250,16 +268,18 @@ window.mpAction = async function (action, button) {
     if (action === 'mp-create') {
       const name = document.querySelector('#host-name').value.trim() || 'Pemain';
       localStorage.setItem('adu-name', name);
-      let pool = [...seedQuestions];
-      try {
-        const response = await fetch('/api/questions', { cache: 'no-store' });
-        if (response.ok) {
-          const data = await response.json();
-          pool.push(...(data.questions || []).filter(q => q?.q && Array.isArray(q.a) && q.a.length === 4 && Number.isInteger(q.c)));
-        }
-      } catch {}
-      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-      result = await mpRequest('/api/room', { name, questions: pool.slice(0, 10) });
+      const source = document.querySelector('#room-source').value;
+      const count = Number(document.querySelector('#room-count').value);
+      if (!Number.isInteger(count) || count < 3 || count > 20) throw new Error('Jumlah soal harus 3–20.');
+      const token = document.querySelector('#room-admin-token').value.trim();
+      if (source !== 'bank' && !token) throw new Error('Masukkan token admin untuk membuat soal khusus room.');
+      const body = { name, source, count, category: document.querySelector('#room-category').value.trim(), difficulty: document.querySelector('#room-difficulty').value };
+      if (source === 'manual') body.questions = [...document.querySelectorAll('.mp-manual-question')].map(group => ({ q: group.querySelector('.mp-q').value.trim(), a: [...group.querySelectorAll('.mp-option')].map(input => input.value.trim()), c: Number(group.querySelector('.mp-correct').value), e: group.querySelector('.mp-explanation').value.trim(), cat: body.category || 'Soal manual', trap: false }));
+      button.textContent = source === 'ai' ? '✦ AI sedang membuat soal…' : '◌ Menyiapkan room…';
+      const response = await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(source === 'bank' ? {} : { Authorization: `Bearer ${token}` }) }, body: JSON.stringify(body) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Gagal membuat room (${response.status})`);
+      result = data;
     } else if (action === 'mp-join') {
       const name = document.querySelector('#guest-name').value.trim() || 'Pemain';
       const code = document.querySelector('#room-code-input').value.trim().toUpperCase();
@@ -273,7 +293,7 @@ window.mpAction = async function (action, button) {
     history.replaceState(null, '', `/?room=${result.code}`);
     mpConnect();
     setScreen('lobby');
-  } catch (error) { toast(error.message); button.disabled = false; }
+  } catch (error) { toast(error.message); button.disabled = false; if (action === 'mp-create') button.textContent = 'Buat room privat →'; }
 };
 
 app.addEventListener('click', event => {
@@ -286,7 +306,9 @@ app.addEventListener('click', event => {
 
 app.addEventListener('input', event => {
   if (event.target.id === 'mp-chat-input') mpUpdateComposer();
+  if (event.target.id === 'room-count') mpUpdateRoomForm();
 });
+app.addEventListener('change', event => { if (event.target.id === 'room-source') mpUpdateRoomForm(); });
 
 app.addEventListener('keydown', event => {
   if (event.target.id === 'mp-chat-input' && event.key === 'Enter') {

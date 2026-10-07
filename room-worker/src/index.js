@@ -16,11 +16,12 @@ export class QuizRoom extends DurableObject {
     if (url.pathname === "/create" && request.method === "POST") {
       if (room && room.expiresAt > Date.now()) return reply({ error: "Kode room sudah dipakai. Coba lagi." }, 409);
       const input = await request.json().catch(() => ({}));
-      const questions = (Array.isArray(input.questions) ? input.questions : []).map(cleanQuestion).filter(Boolean).slice(0, 10);
-      if (questions.length < 3) return reply({ error: "Soal untuk room belum cukup." }, 400);
+      const questions = (Array.isArray(input.questions) ? input.questions : []).map(cleanQuestion).filter(Boolean).slice(0, 20);
+      if (questions.length < 3 || questions.length !== input.questions.length) return reply({ error: "Soal untuk room tidak valid." }, 400);
       const player = { id: crypto.randomUUID(), token: crypto.randomUUID(), name: cleanName(input.name), score: 0, correct: 0, review: [], joinedAt: Date.now() };
-      const next = { hostId: player.id, players: [player], questions, phase: "lobby", index: 0, endsAt: 0, answers: {}, chat: [], expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
+      const next = { hostId: player.id, players: [player], questions, source: input.source, phase: "lobby", index: 0, endsAt: 0, answers: {}, chat: [], expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
       await this.ctx.storage.put("room", next);
+      await this.ctx.storage.setAlarm(next.expiresAt);
       return reply({ playerId: player.id, token: player.token });
     }
     if (!room || room.expiresAt <= Date.now()) return reply({ error: "Room tidak ditemukan atau sudah kedaluwarsa." }, 404);
@@ -162,9 +163,9 @@ export class QuizRoom extends DurableObject {
       room.endsAt = Date.now() + 5000;
       await this.ctx.storage.setAlarm(room.endsAt);
     } else if (room.phase === "reveal") {
-      if (room.index + 1 >= room.questions.length) { room.phase = "finished"; room.endsAt = 0; }
+      if (room.index + 1 >= room.questions.length) { room.phase = "finished"; room.endsAt = 0; room.expiresAt = Date.now() + 15 * 60 * 1000; await this.ctx.storage.setAlarm(room.expiresAt); }
       else { room.index++; room.phase = "question"; room.answers = {}; room.endsAt = Date.now() + 60000; await this.ctx.storage.setAlarm(room.endsAt); }
-    } else return;
+    } else { await this.ctx.storage.setAlarm(room.expiresAt); return; }
     await this.ctx.storage.put("room", room);
     await this.broadcast(room);
   }
