@@ -4,9 +4,9 @@ AI membuat soal **draft** saja. Admin meninjau tiap soal sebelum mengaktifkannya
 
 ## Konfigurasi sekali saja
 
-1. Buat KV namespace di Cloudflare bernama misalnya `adu-iq-questions`, lalu tambahkan binding bernama `QUESTION_CACHE` pada Pages project: **Settings → Bindings → Add → KV namespace**. Redeploy sesudah binding ditambahkan.
+1. Buat KV namespace di Cloudflare bernama misalnya `adu-iq-questions`, lalu isi Namespace ID pada binding `QUESTION_CACHE` di `wrangler.toml`. Konfigurasi Pages proyek ini dikelola oleh file tersebut, sehingga tombol **Add** pada Settings → Bindings bisa terkunci. Push perubahan dan tunggu deployment baru.
 2. Tambahkan **encrypted secrets** di **Settings → Variables and Secrets**: `GEMINI_API_KEY` dan `AI_ADMIN_TOKEN`. Buat token admin acak yang panjang dan simpan sendiri.
-3. Tambahkan variable biasa `GEMINI_MODEL` (default `gemini-2.5-flash`) dan `AI_PROVIDER=gemini`.
+3. Variabel biasa `GEMINI_MODEL=gemini-3.5-flash-lite` dan `AI_PROVIDER=gemini` sudah ada di `wrangler.toml`. Jika mengganti model, ubah file tersebut dan push lagi.
 4. Deploy lewat Git integration atau Wrangler Pages. Dashboard Direct Upload drag-and-drop tidak membangun folder `functions`; gunakan Git integration untuk mengaktifkan endpoint API.
 5. Buka `/admin.html`, masukkan `AI_ADMIN_TOKEN`, lalu buat draft. Token hanya disimpan di memori tab selama halaman terbuka.
 
