@@ -266,6 +266,15 @@ window.mpAction = async function (action, button) {
   try {
     let result;
     if (action === 'mp-create') {
+      if (!document.querySelector('#room-source') || !document.querySelector('#room-count')) {
+        if (sessionStorage.getItem('adu-room-ui-reload') !== 'room-setup-2') {
+          sessionStorage.setItem('adu-room-ui-reload', 'room-setup-2');
+          const url = new URL(location.href);
+          url.searchParams.set('v', 'room-setup-2');
+          location.replace(url);
+        } else throw new Error('Halaman masih memakai tampilan lama. Muat ulang paksa dengan Ctrl+Shift+R.');
+        return;
+      }
       const name = document.querySelector('#host-name').value.trim() || 'Pemain';
       localStorage.setItem('adu-name', name);
       const source = document.querySelector('#room-source').value;
